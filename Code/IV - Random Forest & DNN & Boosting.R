@@ -8,18 +8,14 @@ x_and_e <- mvrnorm(1000, c(20, 15), matrix(c(1, 0.5, 0.5, 1), 2, 2))
 endog_x <- x_and_e[, 1]
 e <- x_and_e[, 2]
 
-e <- rnorm(1000)
-endog_x <- 3*e
-
 
 # Function That Specifies Relationship Between X and instrument
 IV <- rnorm(1000)
 #IV <- sample(1:10, 10000, replace=T)
 x <- endog_x + IV
     # Alternate spects for IV (less correlated)
-#x <- endog_x + (.5*IV)^1/2
-#x <- endog_x + .05*IV^4
-x <- endog_x + exp(IV)^3
+#x <- endog_x + .001*exp(IV)^3
+
 
 # True definition of y (function of obsserved x)
 y <- 1 + x + e
@@ -30,6 +26,7 @@ SimData<- as.data.frame(cbind(e, endog_x, IV, x, y))
 cor(SimData$x, SimData$e)
 cor(SimData$IV, SimData$e)
 cor(SimData$x,SimData$IV)
+cor(SimData$e,SimData$y)
 
 # True effect of x on y
 lm(y ~ x+e , data=SimData)
@@ -141,8 +138,6 @@ svm_radial
 xHat_SVM_rad <- predict(svm_radial, newdata = SimData_Test)
 lm(y ~ xHat_SVM_rad, data=SimData_Test)
 
-# Definitely overfitting (almost as many support vectors as observations)
-
 
 
 
@@ -165,10 +160,13 @@ fitControl <- trainControl(
   ## Repeated 10 times
   repeats = 10)
 
-RF_Fit1 <- train(x ~ ., data = SimData_Train, 
+RF_Fit1 <- train(x ~ IV, data = SimData_Train, 
                  method = "ranger",
                  trControl = fitControl
                  #,verbose = FALSE
 )
+
+xHat_RF <- predict(RF_Fit1, newdata = SimData_Test)
+lm(y ~ xHat_RF, data=SimData_Test)
 
 warnings()
